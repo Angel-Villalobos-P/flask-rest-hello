@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Todo
 #from models import Person
 
 app = Flask(__name__)
@@ -38,6 +38,47 @@ def handle_hello():
     }
 
     return jsonify(response_body), 200
+
+
+######## End points para el todo ################
+
+@app.route('/todos', methods=['GET'])
+def get_todos():
+    # get all the todos
+    todos = Todo.query.all()
+
+    # map the results and your list of todos  inside of the all_todos variable
+    results = list(map(lambda x: x.serialize(), todos))
+
+    return jsonify(results), 200
+
+
+@app.route('/add_todo', methods=['POST'])
+def add_todo():
+
+    # recibir info del request
+    request_body = request.get_json()
+    print(request_body)
+
+    new_todo = Todo(done=request_body["done"], label=request_body["label"])
+    db.session.add(new_todo)
+    db.session.commit()
+
+    return jsonify("All good, added"), 200
+
+@app.route('/todos/<int:id>', methods=['DELETE'])
+def del_todo(id):
+
+    # recibir info del request
+    todo = Todo.query.get(id)
+    if todo is None:
+        raise APIException('Todo not found', status_code=404)
+
+    db.session.delete(todo)
+
+    db.session.commit()
+
+    return jsonify("All good, delete"), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
